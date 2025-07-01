@@ -37,9 +37,10 @@ node server.js
 npm run dev
 ```
 
-#### Environment Variables (Optional)
+#### Environment Variables (Not optional for private key which must be adequately funded with as little as $3 on base ETH network)
 You can create a `.env` file in the `backend/` directory to override defaults:
 ```
+PRIVATE_KEY="0x........"
 PORT=3001
 NODE_ENV=development
 FRONTEND_URL=http://localhost:5173
