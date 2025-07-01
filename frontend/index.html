@@ -1,0 +1,594 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Irys File Share</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: #333;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 3rem;
+            color: white;
+        }
+
+        .header h1 {
+            font-size: 3rem;
+            margin-bottom: 0.5rem;
+            font-weight: 700;
+        }
+
+        .header p {
+            font-size: 1.2rem;
+            opacity: 0.9;
+        }
+
+        .card {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            padding: 2rem;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            backdrop-filter: blur(10px);
+            margin-bottom: 2rem;
+        }
+
+        .upload-area {
+            border: 3px dashed #667eea;
+            border-radius: 15px;
+            padding: 3rem;
+            text-align: center;
+            transition: all 0.3s ease;
+            cursor: pointer;
+            margin-bottom: 2rem;
+        }
+
+        .upload-area:hover {
+            border-color: #764ba2;
+            background: rgba(102, 126, 234, 0.05);
+        }
+
+        .upload-area.dragover {
+            border-color: #764ba2;
+            background: rgba(102, 126, 234, 0.1);
+            transform: scale(1.02);
+        }
+
+        .upload-icon {
+            font-size: 4rem;
+            color: #667eea;
+            margin-bottom: 1rem;
+        }
+
+        .upload-text {
+            font-size: 1.2rem;
+            margin-bottom: 1rem;
+            color: #666;
+        }
+
+        .file-input {
+            display: none;
+        }
+
+        .btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 1rem 2rem;
+            border-radius: 50px;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            font-weight: 600;
+            letter-spacing: 1px;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(102, 126, 234, 0.3);
+        }
+
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 8px;
+            background: #e0e0e0;
+            border-radius: 4px;
+            overflow: hidden;
+            margin: 1rem 0;
+            display: none;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #667eea, #764ba2);
+            transition: width 0.3s ease;
+            width: 0%;
+        }
+
+        .result-card {
+            display: none;
+            background: #f8f9fa;
+            border-radius: 15px;
+            padding: 2rem;
+            margin-top: 2rem;
+        }
+
+        .result-card.success {
+            border-left: 5px solid #28a745;
+        }
+
+        .result-card.error {
+            border-left: 5px solid #dc3545;
+        }
+
+        .share-link {
+            background: #fff;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            padding: 1rem;
+            margin: 1rem 0;
+            font-family: monospace;
+            font-size: 0.9rem;
+            word-break: break-all;
+        }
+
+        .copy-btn {
+            background: #28a745;
+            color: white;
+            border: none;
+            padding: 0.5rem 1rem;
+            border-radius: 5px;
+            cursor: pointer;
+            margin-left: 1rem;
+        }
+
+        .file-info {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            margin: 1rem 0;
+        }
+
+        .info-item {
+            background: white;
+            padding: 1rem;
+            border-radius: 10px;
+            text-align: center;
+        }
+
+        .info-label {
+            font-size: 0.8rem;
+            color: #666;
+            text-transform: uppercase;
+            margin-bottom: 0.5rem;
+        }
+
+        .info-value {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: #333;
+        }
+
+        .download-section {
+            margin-top: 3rem;
+        }
+
+        .download-input {
+            width: 100%;
+            padding: 1rem;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            font-size: 1rem;
+            margin-bottom: 1rem;
+        }
+
+        .download-result {
+            display: none;
+            margin-top: 1rem;
+        }
+
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #667eea;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-right: 10px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .status {
+            padding: 1rem;
+            border-radius: 10px;
+            margin: 1rem 0;
+        }
+
+        .status.success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        .status.error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+
+        .status.info {
+            background: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🚀 Irys File Share</h1>
+            <p>Upload any file to the decentralized web and share it instantly</p>
+        </div>
+
+        <!-- Upload Section -->
+        <div class="card">
+            <h2>📤 Upload File</h2>
+            
+            <div class="upload-area" id="uploadArea">
+                <div class="upload-icon">📁</div>
+                <div class="upload-text">
+                    <strong>Click to select a file</strong> or drag and drop
+                </div>
+                <div style="font-size: 0.9rem; color: #999;">
+                    Maximum file size: 100MB
+                </div>
+            </div>
+
+            <input type="file" id="fileInput" class="file-input" />
+            
+            <div class="progress-bar" id="progressBar">
+                <div class="progress-fill" id="progressFill"></div>
+            </div>
+
+            <div style="text-align: center;">
+                <button class="btn" id="uploadBtn" disabled>
+                    Select a file first
+                </button>
+            </div>
+
+            <div class="result-card" id="resultCard">
+                <div id="resultContent"></div>
+            </div>
+        </div>
+
+        <!-- Download Section -->
+        <div class="card download-section">
+            <h2>📥 Download File</h2>
+            <p style="margin-bottom: 1rem; color: #666;">
+                Enter a share ID or download link to access a file
+            </p>
+            
+            <input 
+                type="text" 
+                id="downloadInput" 
+                class="download-input" 
+                placeholder="Enter share ID or download link..."
+            />
+            
+            <div style="text-align: center;">
+                <button class="btn" id="downloadBtn">
+                    Get File Info
+                </button>
+            </div>
+
+            <div class="download-result" id="downloadResult">
+                <!-- Download result will be populated here -->
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Auto-detect API base URL
+        const API_BASE = window.location.origin + '/api';
+        
+        // Upload functionality
+        const uploadArea = document.getElementById('uploadArea');
+        const fileInput = document.getElementById('fileInput');
+        const uploadBtn = document.getElementById('uploadBtn');
+        const progressBar = document.getElementById('progressBar');
+        const progressFill = document.getElementById('progressFill');
+        const resultCard = document.getElementById('resultCard');
+        const resultContent = document.getElementById('resultContent');
+
+        // Download functionality
+        const downloadInput = document.getElementById('downloadInput');
+        const downloadBtn = document.getElementById('downloadBtn');
+        const downloadResult = document.getElementById('downloadResult');
+
+        let selectedFile = null;
+
+        // Upload area interactions
+        uploadArea.addEventListener('click', () => fileInput.click());
+        uploadArea.addEventListener('dragover', handleDragOver);
+        uploadArea.addEventListener('dragleave', handleDragLeave);
+        uploadArea.addEventListener('drop', handleDrop);
+
+        fileInput.addEventListener('change', handleFileSelect);
+        uploadBtn.addEventListener('click', handleUpload);
+        downloadBtn.addEventListener('click', handleDownload);
+
+        function handleDragOver(e) {
+            e.preventDefault();
+            uploadArea.classList.add('dragover');
+        }
+
+        function handleDragLeave(e) {
+            e.preventDefault();
+            uploadArea.classList.remove('dragover');
+        }
+
+        function handleDrop(e) {
+            e.preventDefault();
+            uploadArea.classList.remove('dragover');
+            
+            const files = e.dataTransfer.files;
+            if (files.length > 0) {
+                selectedFile = files[0];
+                updateUploadUI();
+            }
+        }
+
+        function handleFileSelect(e) {
+            if (e.target.files.length > 0) {
+                selectedFile = e.target.files[0];
+                updateUploadUI();
+            }
+        }
+
+        function updateUploadUI() {
+            if (selectedFile) {
+                uploadArea.innerHTML = `
+                    <div class="upload-icon">📄</div>
+                    <div class="upload-text">
+                        <strong>${selectedFile.name}</strong><br>
+                        ${formatFileSize(selectedFile.size)} • ${selectedFile.type || 'Unknown type'}
+                    </div>
+                `;
+                uploadBtn.textContent = 'Upload to Irys';
+                uploadBtn.disabled = false;
+            }
+        }
+
+        async function handleUpload() {
+            if (!selectedFile) return;
+
+            uploadBtn.disabled = true;
+            uploadBtn.innerHTML = '<span class="loading"></span>Uploading...';
+            progressBar.style.display = 'block';
+            resultCard.style.display = 'none';
+
+            const formData = new FormData();
+            formData.append('file', selectedFile);
+
+            try {
+                const response = await fetch(`${API_BASE}/upload`, {
+                    method: 'POST',
+                    body: formData
+                });
+
+                progressFill.style.width = '100%';
+
+                const result = await response.json();
+
+                if (result.success) {
+                    showResult('success', `
+                        <h3>✅ Upload Successful!</h3>
+                        <div class="file-info">
+                            <div class="info-item">
+                                <div class="info-label">File Name</div>
+                                <div class="info-value">${result.fileInfo.name}</div>
+                            </div>
+                            <div class="info-item">
+                                <div class="info-label">File Size</div>
+                                <div class="info-value">${formatFileSize(result.fileInfo.size)}</div>
+                            </div>
+                            <div class="info-item">
+                                <div class="info-label">File Type</div>
+                                <div class="info-value">${result.fileInfo.type}</div>
+                            </div>
+                        </div>
+                        
+                        <h4>📋 Share Link:</h4>
+                        <div class="share-link">
+                            ${result.downloadUrl}
+                            <button class="copy-btn" onclick="copyToClipboard('${result.downloadUrl}')">Copy</button>
+                        </div>
+                        
+                        <h4>🌐 Direct Irys Link:</h4>
+                        <div class="share-link">
+                            ${result.irysUrl}
+                            <button class="copy-btn" onclick="copyToClipboard('${result.irysUrl}')">Copy</button>
+                        </div>
+                        
+                        <h4>🔑 Share ID:</h4>
+                        <div class="share-link">
+                            ${result.shareId}
+                            <button class="copy-btn" onclick="copyToClipboard('${result.shareId}')">Copy</button>
+                        </div>
+                    `);
+                } else {
+                    showResult('error', `
+                        <h3>❌ Upload Failed</h3>
+                        <p>${result.message || 'Unknown error occurred'}</p>
+                    `);
+                }
+            } catch (error) {
+                showResult('error', `
+                    <h3>❌ Upload Failed</h3>
+                    <p>${error.message}</p>
+                `);
+            } finally {
+                uploadBtn.disabled = false;
+                uploadBtn.textContent = 'Upload Another File';
+                progressBar.style.display = 'none';
+                progressFill.style.width = '0%';
+            }
+        }
+
+        async function handleDownload() {
+            const input = downloadInput.value.trim();
+            if (!input) return;
+
+            downloadBtn.disabled = true;
+            downloadBtn.innerHTML = '<span class="loading"></span>Loading...';
+            downloadResult.style.display = 'none';
+
+            try {
+                // Extract share ID from various input formats
+                let shareId = input;
+                
+                // If it's a full URL, extract the share ID
+                if (input.includes('/download/')) {
+                    shareId = input.split('/download/')[1];
+                } else if (input.includes('/file/')) {
+                    shareId = input.split('/file/')[1];
+                }
+
+                const response = await fetch(`${API_BASE}/file/${shareId}`);
+                const result = await response.json();
+
+                if (result.success) {
+                    downloadResult.innerHTML = `
+                        <div class="status success">
+                            <h3>📄 File Information</h3>
+                            <div class="file-info">
+                                <div class="info-item">
+                                    <div class="info-label">File Name</div>
+                                    <div class="info-value">${result.file.name}</div>
+                                </div>
+                                <div class="info-item">
+                                    <div class="info-label">File Size</div>
+                                    <div class="info-value">${formatFileSize(result.file.size)}</div>
+                                </div>
+                                <div class="info-item">
+                                    <div class="info-label">File Type</div>
+                                    <div class="info-value">${result.file.type}</div>
+                                </div>
+                                <div class="info-item">
+                                    <div class="info-label">Upload Date</div>
+                                    <div class="info-value">${new Date(result.file.uploadDate).toLocaleDateString()}</div>
+                                </div>
+                            </div>
+                            
+                            <div style="text-align: center; margin-top: 2rem;">
+                                <a href="${result.file.downloadUrl}" class="btn" target="_blank">
+                                    📥 Download File
+                                </a>
+                            </div>
+                        </div>
+                    `;
+                } else {
+                    downloadResult.innerHTML = `
+                        <div class="status error">
+                            <h3>❌ File Not Found</h3>
+                            <p>The file with ID "${shareId}" could not be found.</p>
+                        </div>
+                    `;
+                }
+                
+                downloadResult.style.display = 'block';
+                
+            } catch (error) {
+                downloadResult.innerHTML = `
+                    <div class="status error">
+                        <h3>❌ Error</h3>
+                        <p>${error.message}</p>
+                    </div>
+                `;
+                downloadResult.style.display = 'block';
+            } finally {
+                downloadBtn.disabled = false;
+                downloadBtn.textContent = 'Get File Info';
+            }
+        }
+
+        function showResult(type, content) {
+            resultCard.className = `result-card ${type}`;
+            resultContent.innerHTML = content;
+            resultCard.style.display = 'block';
+        }
+
+        function formatFileSize(bytes) {
+            if (bytes === 0) return '0 Bytes';
+            const k = 1024;
+            const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+        }
+        console.log(navigator)
+        function copyToClipboard(text) {
+            navigator.clipboard.writeText(text).then(() => {
+                // Show temporary success message
+                const originalText = event.target.textContent;
+                event.target.textContent = 'Copied!';
+                event.target.style.background = '#28a745';
+                
+                setTimeout(() => {
+                    event.target.textContent = originalText;
+                    event.target.style.background = '#28a745';
+                }, 2000);
+            }).catch(err => {
+                console.error('Failed to copy: ', err);
+                alert('Failed to copy to clipboard');
+            });
+        }
+
+        // Check API health on load
+        async function checkApiHealth() {
+            try {
+                const response = await fetch(`${API_BASE}/health`);
+                const result = await response.json();
+                console.log('API Status:', result.message);
+            } catch (error) {
+                console.error('API connection failed:', error);
+                showResult('error', `
+                    <h3>⚠️ Connection Error</h3>
+                    <p>Cannot connect to the backend server. Please make sure it's running on port 3001.</p>
+                `);
+            }
+        }
+
+        // Initialize
+        checkApiHealth();
+    </script>
+</body>
+</html>
